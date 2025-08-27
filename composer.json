@@ -1,0 +1,78 @@
+{
+    "name": "deloughry/website-crawler",
+    "description": "A powerful, feature-rich website crawler built with Laravel Zero and enhanced with beautiful Termwind output. Crawl websites, extract metadata, analyze links, find emails, and generate comprehensive reports.",
+    "keywords": [
+        "laravel",
+        "laravel-zero",
+        "console",
+        "cli",
+        "crawler",
+        "web-scraper",
+        "seo-tools",
+        "website-analysis",
+        "sitemap-generator",
+        "email-extraction",
+        "link-analysis",
+        "termwind"
+    ],
+    "homepage": "https://github.com/DR-DinoMight/website-crawler",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Matthew Deloughry",
+            "email": "matt@deloughry.co.uk",
+            "homepage": "https://deloughry.co.uk",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel-zero/framework": "^12.0",
+        "spatie/crawler": "^8.4",
+        "nunomaduro/termwind": "^2.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.22",
+        "mockery/mockery": "^1.6.12",
+        "pestphp/pest": "^3.8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php -r \"file_exists('website-crawler') || copy('application', 'website-crawler');\""
+        ],
+        "post-update-cmd": [
+            "@php -r \"file_exists('website-crawler') || copy('application', 'website-crawler');\""
+        ],
+        "test": "pest",
+        "test-coverage": "pest --coverage",
+        "format": "pint"
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "bin": ["website-crawler"],
+    "support": {
+        "issues": "https://github.com/deloughry/website-crawler/issues",
+        "source": "https://github.com/deloughry/website-crawler"
+    }
+}
