@@ -22,6 +22,7 @@ class CrawlWebsiteCommand extends Command
                           {--output-dir= : Custom output directory path (defaults to temp directory)}
                           {--no-output : Disable automatic report generation}
                           {--generate-sitemap : Generate XML sitemap}
+                          {--visual-sitemap : Generate Mermaid visual sitemap}
                           {--javascript : Execute JavaScript while crawling}
                           {--extract-emails : Extract email addresses from pages}
                           {--analyze-links : Analyze internal and external links}';
@@ -89,6 +90,11 @@ class CrawlWebsiteCommand extends Command
             $this->generateAndSaveSitemap();
         }
 
+        // Generate Mermaid sitemap if requested
+        if ($this->option('visual-sitemap')) {
+            $this->generateAndSaveMermaid();
+        }
+
         // Generate email file if emails were extracted
         if ($this->option('extract-emails') && !empty($this->extractedEmails)) {
             $this->generateAndSaveEmailFile();
@@ -117,6 +123,7 @@ class CrawlWebsiteCommand extends Command
             'Analyze Links' => $this->option('analyze-links') ? 'Yes' : 'No',
             'Generate Report' => !$this->option('no-output') ? 'Yes' : 'No',
             'Generate Sitemap' => $this->option('generate-sitemap') ? 'Yes' : 'No',
+            'Visual Sitemap' => $this->option('visual-sitemap') ? 'Yes' : 'No',
         ];
 
         foreach ($settings as $setting => $value) {
@@ -152,8 +159,8 @@ class CrawlWebsiteCommand extends Command
                 }
             }
 
-            // Analyze links if requested
-            if ($this->option('analyze-links')) {
+            // Analyze links if requested or needed for Mermaid generation
+            if ($this->option('analyze-links') || $this->option('visual-sitemap')) {
                 $links = $this->analyzeLinks($body, $url);
                 if (!empty($links)) {
                     $this->analyzedLinks[$url] = $links;
@@ -479,6 +486,86 @@ class CrawlWebsiteCommand extends Command
 
         $sitemap .= '</urlset>';
         return $sitemap;
+    }
+
+    protected function generateAndSaveMermaid(): void
+    {
+        $mermaidPath = $this->outputDirectory . '/visual-sitemap.mmd';
+        $diagram = $this->generateMermaidSitemap();
+
+        file_put_contents($mermaidPath, $diagram);
+        $this->generatedFiles[] = $mermaidPath;
+        render('<div class="px-1 bg-green-500 text-white">🗺️ Mermaid sitemap generated</div>');
+    }
+
+    protected function generateMermaidSitemap(): string
+    {
+        $lines = [];
+        $lines[] = 'graph TD';
+
+        // Map each URL to a stable node id
+        $urlToNodeId = [];
+        $nextId = 1;
+        $getNodeId = function (string $url) use (&$urlToNodeId, &$nextId): string {
+            if (!isset($urlToNodeId[$url])) {
+                $urlToNodeId[$url] = 'N' . $nextId++;
+            }
+            return $urlToNodeId[$url];
+        };
+
+        // Helper to create a readable label for a URL
+        $labelForUrl = function (string $url): string {
+            $parsed = parse_url($url);
+            $path = $parsed['path'] ?? '/';
+            $host = $parsed['host'] ?? '';
+            $label = ($host ? $host : '') . $path;
+            if (isset($parsed['query'])) {
+                $label .= '?' . $parsed['query'];
+            }
+            return $label;
+        };
+
+        // Prefer page titles when available
+        $getTitleForUrl = function (string $url) use ($labelForUrl): string {
+            $title = $this->pageMetadata[$url]['title'] ?? null;
+            $label = $title && $title !== '' ? $title : $labelForUrl($url);
+            // Escape quotes for Mermaid label
+            $label = str_replace(["\\", '"'], ["\\\\", '\\"'], $label);
+            // Limit length to keep diagram readable
+            if (strlen($label) > 80) {
+                $label = substr($label, 0, 77) . '...';
+            }
+            return $label;
+        };
+
+        // Build set of nodes and edges from analyzed internal links
+        $edges = [];
+        foreach ($this->analyzedLinks as $sourceUrl => $links) {
+            foreach ($links['internal'] as $link) {
+                $targetUrl = $link['url'];
+                $srcId = $getNodeId($sourceUrl);
+                $tgtId = $getNodeId($targetUrl);
+                $edges[$srcId . ' --> ' . $tgtId] = true;
+            }
+        }
+
+        // Ensure all crawled URLs appear as nodes, even without edges
+        foreach ($this->crawledUrls as $urlData) {
+            $getNodeId($urlData['url']);
+        }
+
+        // Emit node declarations with readable labels
+        foreach ($urlToNodeId as $url => $nodeId) {
+            $label = $getTitleForUrl($url);
+            $lines[] = $nodeId . '["' . $label . '"]';
+        }
+
+        // Emit edges
+        foreach (array_keys($edges) as $edge) {
+            $lines[] = $edge;
+        }
+
+        return implode("\n", $lines) . "\n";
     }
 
     protected function truncateUrl(string $url, int $length = 60): string

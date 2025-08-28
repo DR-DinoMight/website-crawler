@@ -327,4 +327,63 @@ describe('CrawlWebsiteCommand', function () {
                 ->and($sitemap)->not->toContain('https://example.com/page2'); // 404 should be excluded
         });
     });
+
+    describe('mermaid visual sitemap', function () {
+        it('generates Mermaid diagram with nodes and edges', function () {
+            $command = new CrawlWebsiteCommand();
+
+            // Prepare crawled URLs and metadata
+            $crawledUrls = [
+                ['url' => 'https://example.com', 'status_code' => 200, 'crawled_at' => '2024-01-01 12:00:00'],
+                ['url' => 'https://example.com/about', 'status_code' => 200, 'crawled_at' => '2024-01-01 12:01:00'],
+                ['url' => 'https://example.com/contact', 'status_code' => 200, 'crawled_at' => '2024-01-01 12:02:00'],
+            ];
+
+            $pageMetadata = [
+                'https://example.com' => ['title' => 'Home'],
+                'https://example.com/about' => ['title' => 'About Us'],
+                'https://example.com/contact' => ['title' => 'Contact'],
+            ];
+
+            $analyzedLinks = [
+                'https://example.com' => [
+                    'internal' => [
+                        ['url' => 'https://example.com/about', 'text' => 'About', 'found_on' => 'https://example.com'],
+                        ['url' => 'https://example.com/contact', 'text' => 'Contact', 'found_on' => 'https://example.com'],
+                    ],
+                    'external' => [],
+                ],
+                'https://example.com/about' => [
+                    'internal' => [
+                        ['url' => 'https://example.com', 'text' => 'Home', 'found_on' => 'https://example.com/about'],
+                    ],
+                    'external' => [],
+                ],
+            ];
+
+            // Set properties via reflection
+            $reflection = new ReflectionClass($command);
+            foreach (
+                [
+                    'crawledUrls' => $crawledUrls,
+                    'pageMetadata' => $pageMetadata,
+                    'analyzedLinks' => $analyzedLinks,
+                ] as $prop => $value
+            ) {
+                $property = $reflection->getProperty($prop);
+                $property->setAccessible(true);
+                $property->setValue($command, $value);
+            }
+
+            $method = new ReflectionMethod($command, 'generateMermaidSitemap');
+            $method->setAccessible(true);
+            $diagram = $method->invoke($command);
+
+            expect($diagram)->toContain('graph TD')
+                ->and($diagram)->toContain('About Us')
+                ->and($diagram)->toContain('Contact')
+                ->and($diagram)->toContain('Home')
+                ->and($diagram)->toContain('-->');
+        });
+    });
 });

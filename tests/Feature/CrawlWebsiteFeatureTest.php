@@ -27,6 +27,7 @@ describe('CrawlWebsiteCommand Feature Tests', function () {
             ->expectsOutputToContain('--output-dir')
             ->expectsOutputToContain('--no-output')
             ->expectsOutputToContain('--generate-sitemap')
+            ->expectsOutputToContain('--visual-sitemap')
             ->expectsOutputToContain('--javascript')
             ->expectsOutputToContain('--extract-emails')
             ->expectsOutputToContain('--analyze-links')
@@ -62,7 +63,7 @@ describe('CrawlWebsiteCommand Feature Tests', function () {
 
     describe('flag combinations', function () {
         it('accepts multiple flags together', function () {
-            $command = 'crawl:website https://example.com --extract-emails --analyze-links --generate-sitemap --help';
+            $command = 'crawl:website https://example.com --extract-emails --analyze-links --generate-sitemap --visual-sitemap --help';
 
             $this->artisan($command)
                 ->assertExitCode(0);
@@ -78,6 +79,7 @@ describe('CrawlWebsiteCommand Feature Tests', function () {
                 '--extract-emails ' .
                 '--analyze-links ' .
                 '--generate-sitemap ' .
+                '--visual-sitemap ' .
                 '--javascript ' .
                 '--help';
 
